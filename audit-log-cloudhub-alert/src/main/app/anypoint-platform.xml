@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <sub-flow name="loginToAnypointPlatformFlow">
+        <logger message="Login to Anypoint Platform" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Login Request Payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	username: p('anypoint.platform.login.user'),
+	password: p('anypoint.platform.login.pass')
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Anypoint_Platform_Request_Configuration" path="/accounts/login" method="POST" doc:name="Request token to Anypoint Platform">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="Transform to object">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Set authorization token">
+            <dw:set-variable variableName="authorization"><![CDATA[%dw 1.0
+%output application/java
+---
+"Bearer " ++ payload.access_token]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="Authentication token retrieved" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="retrieveUsersForOrganizationFlow">
+        <logger message="Retrieving users - organizationId: #[flowVars.organizationId]" level="INFO" doc:name="Logger"/>
+        <http:request config-ref="HTTP_Anypoint_Platform_Request_Configuration" path="/accounts/api/organizations/{organizationId}/users" method="GET" doc:name="Get users">
+            <http:request-builder>
+                <http:uri-param paramName="organizationId" value="#[flowVars.organizationId]"/>
+                <http:header headerName="Authorization" value="#[flowVars.authorization]"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="Transform to map" metadata:id="6f0b5378-70f4-4308-8fd1-56dc34deaa49">
+            <dw:input-payload doc:sample="examples/users.json" mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+(
+	payload.data map ((user) ->
+		{
+			userId: user.id,
+			userName: user.username,
+			userEmail: user.email
+		}
+	) groupBy $.userId
+) mapObject {
+	($$): $[0]
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Retrieved users - organizationId: #[flowVars.organizationId] - Number of users: #[payload.size()]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="retrieveObjectsForOrganizationFlow">
+        <logger message="Retrieving objects - organizationId: #[flowVars.organizationId]" level="INFO" doc:name="Logger"/>
+        <http:request config-ref="HTTP_Anypoint_Platform_Request_Configuration" path="/audit/v2/organizations/{organizationId}/objects" method="GET" doc:name="Retrieve Objects">
+            <http:request-builder>
+                <http:uri-param paramName="organizationId" value="#[flowVars.organizationId]"/>
+                <http:header headerName="Authorization" value="#[flowVars.authorization]"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="Transform to map" metadata:id="a680f214-e839-40df-ab4d-5ba5e6ea2561">
+            <dw:input-payload doc:sample="examples/objects.json" mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+((payload.data map ((object) -> object)) groupBy $.objectId) mapObject {
+	($$): $[0].objectName
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Retrieved objects - organizationId: #[flowVars.organizationId] - Number of objects: #[payload.size()]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <sub-flow name="retrieveAuditLogsForOrganizationFlow">
+        <logger message="Retrieving audit logs - organizationId: #[flowVars.organizationId] - from: #[flowVars.lastSyncDate] - to #[flowVars.currentSyncDate]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Generate request payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	"startDate": flowVars.lastSyncDate,
+	"endDate": flowVars.currentSyncDate
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Anypoint_Platform_Request_Configuration" path="/audit/v2/organizations/{organizationId}/query" method="POST" doc:name="Retrieve Audit Logs">
+            <http:request-builder>
+                <http:uri-param paramName="organizationId" value="#[flowVars.organizationId]"/>
+                <http:header headerName="Authorization" value="#[flowVars.authorization]"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message metadata:id="980c1817-e03c-4af9-99e1-ac8d0134c600" doc:name="Enrich Audit Logs">
+            <dw:input-payload doc:sample="examples/audit-logs.json" mimeType="application/json"/>
+            <dw:input-variable doc:sample="sample_data/map.dwl" variableName="objects"/>
+            <dw:input-variable doc:sample="sample_data/map_1.dwl" variableName="users"/>
+            <dw:set-payload resource="classpath:dataweave/enrich-audit-logs.dwl"/>
+        </dw:transform-message>
+        <logger message="Retrieved audit logs - organizationId: #[flowVars.organizationId] - from: #[flowVars.lastSyncDate] - to #[flowVars.currentSyncDate] - Number of entries: #[payload.size()]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+</mule>

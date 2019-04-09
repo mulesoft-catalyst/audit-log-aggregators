@@ -1,0 +1,24 @@
+[
+  {
+    "ruleId": "USER_DAMIAN",
+    "ruleName": "The user has to be damian-calabresi",
+    "userName": {
+      "include": "damian-calabresi"
+    },
+    "clientIP": {
+      "include": null,
+      "exclude": null
+    }
+  },
+  {
+    "ruleId": "USER_NO_DAMIAN",
+    "ruleName": "The user cannot be damian-calabresi",
+    "userName": {
+      "exclude": "damian-calabresi"
+    },
+    "clientIP": {
+      "include": null,
+      "exclude": null
+    }
+  }
+]

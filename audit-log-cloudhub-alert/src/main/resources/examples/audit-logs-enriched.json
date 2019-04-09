@@ -1,0 +1,38 @@
+[
+    {
+        "action": "Login",
+        "clientIP": "168.128.85.234",
+        "failed": false,
+        "failedCause": null,
+        "objectId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08",
+        "objectName": "damian-calabresi",
+        "objectType": "User",
+        "parentObjectId": null,
+        "parentObjectName": null,
+        "parentObjectType": null,
+        "platform": "CoreServices",
+        "serverIP": "10.0.21.145",
+        "time": "1526674812209",
+        "userEmail": "damian.calabresi@mulesoft.com",
+        "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08",
+        "userName": "damian-calabresi"
+    },
+    {
+        "action": "Login",
+        "clientIP": "104.193.29.52",
+        "failed": false,
+        "failedCause": null,
+        "objectId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08",
+        "objectName": "damian-calabresi",
+        "objectType": "User",
+        "parentObjectId": null,
+        "parentObjectName": null,
+        "parentObjectType": null,
+        "platform": "CoreServices",
+        "serverIP": "10.0.21.177",
+        "time": "1526921116209",
+        "userEmail": "damian.calabresi@mulesoft.com",
+        "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08",
+        "userName": "damian-calabresi"
+    }
+]
