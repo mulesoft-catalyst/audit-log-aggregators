@@ -1,0 +1,129 @@
+{
+  "data": [
+    {
+      "objectId": "161878",
+      "objectName": "1.0"
+    },
+    {
+      "objectId": "40910d26-70f8-4e52-8e46-a7ea693370e4",
+      "objectName": "Alert example"
+    },
+    {
+      "objectId": "1984493",
+      "objectName": "anypoint-platform-status-splunk-sync-app"
+    },
+    {
+      "objectId": "216437",
+      "objectName": "API reference"
+    },
+    {
+      "objectId": "1977525",
+      "objectName": "api-test-mock"
+    },
+    {
+      "objectId": "1977529",
+      "objectName": "api-test-mock"
+    },
+    {
+      "objectId": "1977470",
+      "objectName": "ApiTestMock"
+    },
+    {
+      "objectId": "1977512",
+      "objectName": "ApiTestMock"
+    },
+    {
+      "objectId": "1977514",
+      "objectName": "ApiTestMock"
+    },
+    {
+      "objectId": "1977517",
+      "objectName": "ApiTestMock"
+    },
+    {
+      "objectId": "1977519",
+      "objectName": "ApiTestMock2"
+    },
+    {
+      "objectId": "1977522",
+      "objectName": "ApiTestMock3"
+    },
+    {
+      "objectId": "7051f36f-b12e-4a78-8e37-4a509afebc37",
+      "objectName": "Application deployed"
+    },
+    {
+      "objectId": "eb2474de-6133-4b52-acfc-6c2b7547def2",
+      "objectName": "Application undeployed"
+    },
+    {
+      "objectId": "b05d4fc0-5f92-49bf-a376-1b1dedcc8d00",
+      "objectName": "Application Undeployed"
+    },
+    {
+      "objectId": "1965635",
+      "objectName": "hello-world"
+    },
+    {
+      "objectId": "11697000",
+      "objectName": "hello-world-api"
+    },
+    {
+      "objectId": "61857",
+      "objectName": "hello-world-api"
+    },
+    {
+      "objectId": "1967129",
+      "objectName": "hello-world-api-proxy"
+    },
+    {
+      "objectId": "1966782",
+      "objectName": "hello-world-api-v1.0-3.8.x"
+    },
+    {
+      "objectId": "1986512",
+      "objectName": "hello-world-api-v1.0-3.8.x"
+    },
+    {
+      "objectId": "276115",
+      "objectName": "mule-hybrid-test"
+    },
+    {
+      "objectId": "1977524",
+      "objectName": "mule-runtime-config"
+    },
+    {
+      "objectId": "272747",
+      "objectName": "mule-splunk-test"
+    },
+    {
+      "objectId": "51994943-e4bb-4356-a121-4534748fe121",
+      "objectName": "Server disconnected"
+    },
+    {
+      "objectId": "58da8c95e4b00ff9156abb0b",
+      "objectName": "splunklogging-pd"
+    },
+    {
+      "objectId": "12468250",
+      "objectName": "test"
+    },
+    {
+      "objectId": "174068",
+      "objectName": "test"
+    },
+    {
+      "objectId": "2671262",
+      "objectName": "vCoresProduction"
+    },
+    {
+      "objectId": "2671263",
+      "objectName": "vCoresSandbox"
+    },
+    {
+      "objectId": "147993",
+      "objectName": null
+    }
+  ],
+  "total": 31
+}

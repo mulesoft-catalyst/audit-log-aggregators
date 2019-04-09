@@ -1,0 +1,22 @@
+[
+  {
+    "ruleId": "USER_DAMIAN",
+    "ruleName": "The user damian-calabresi is executing an action over an Application",
+    "userName": {
+      "include": "damian-calabresi"
+    },
+    "objectType": {
+      "include": "Application"
+    }
+  },
+  {
+    "ruleId": "USER_NO_DAMIAN",
+    "ruleName": "A user different than damian-calabresi is logging on Anypoint Platform",
+    "userName": {
+      "exclude": "damian-calabresi"
+    },
+    "action": {
+      "include": "Login"
+    }
+  }
+]

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <flow name="auditLogsSplunkAggregatorFlow" processingStrategy="synchronous">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="${mule.poll.frequency.seconds}" timeUnit="SECONDS"/>
+            <watermark variable="lastSyncDate" default-expression="#[server.dateTime.withTimeZone('UTC').plusSeconds('-'+${mule.poll.frequency.seconds})]" update-expression="#[flowVars.currentSyncDate]"/>
+            <logger message="Starting Audit Log Retrieval" level="INFO" doc:name="Logger"/>
+        </poll>
+        <flow-ref name="loadRules" doc:name="loadRules"/>
+        <dw:transform-message doc:name="Set properties">
+            <dw:set-variable resource="classpath:dataweave/set-properties.dwl" variableName="config"/>
+        </dw:transform-message>
+        <flow-ref name="loginToAnypointPlatformFlow" doc:name="loginToAnypointPlatformFlow"/>
+        <set-variable variableName="currentSyncDate" value="#[server.dateTime.withTimeZone('UTC')]" doc:name="Set current date"/>
+        <foreach collection="#[flowVars.config.organizationIdList]" doc:name="For Each">
+            <set-variable variableName="organizationId" value="#[payload]" doc:name="Set organizationId"/>
+            <logger message="Starting sync process for organizationId: #[flowVars.organizationId]" level="INFO" doc:name="Logger"/>
+            <flow-ref name="syncForOneOrganization" doc:name="syncForOneOrganization"/>
+        </foreach>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="audit-log-cloudhub-alert failed - Error: #[exception.message] - Cause: #[exception.cause]" level="ERROR" doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+    <sub-flow name="loadRules">
+        <set-payload value="#[Thread.currentThread().getContextClassLoader().getResourceAsStream('rules.json')]" mimeType="application/json" doc:name="Set Payload"/>
+        <dw:transform-message doc:name="Transform Rules to Java">
+            <dw:set-variable variableName="rules"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+        </dw:transform-message>
+    </sub-flow>
+    <sub-flow name="syncForOneOrganization">
+        <flow-ref name="retrieveUsersForOrganizationFlow" doc:name="retrieveUsersForOrganizationFlow"/>
+        <set-variable variableName="users" value="#[payload]" doc:name="Set users"/>
+        <flow-ref name="retrieveObjectsForOrganizationFlow" doc:name="retrieveObjectsForOrganizationFlow"/>
+        <set-variable variableName="objects" value="#[payload]" doc:name="Set objects"/>
+        <flow-ref name="retrieveAuditLogsForOrganizationFlow" doc:name="retrieveAuditLogsForOrganizationFlow"/>
+        <flow-ref name="compareRules" doc:name="compareRules"/>
+        <foreach collection="#[payload]" doc:name="For Each">
+            <flow-ref name="send-cloudhub-notification" doc:name="send-cloudhub-notification"/>
+        </foreach>
+    </sub-flow>
+    <sub-flow name="compareRules">
+        <logger message="Comparing audit logs against alert rules - Number of logs: #[payload.size()] - Number of rules: #[flowVars.rules.size()]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Compare Rules">
+            <dw:input-payload mimeType="application/java"/>
+            <dw:input-variable mimeType="application/java" variableName="rules"/>
+            <dw:set-payload resource="classpath:dataweave/compare-rules.dwl"/>
+        </dw:transform-message>
+        <logger message="Comparing audit logs against alert rules - Rules matched: #[payload.size()]" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    <flow name="send-cloudhub-notification">
+        <cloudhub:create-notification config-ref="Cloudhub__Inhered_Token_Authentication" domain="${app.name}" message="Alert - Rule: #[payload.ruleId] - #[payload.ruleName] - Audit Log: #[message.payloadAs(java.lang.String)]" priority="WARN" doc:name="Cloudhub">
+            <cloudhub:custom-properties>
+                <cloudhub:custom-property key="ruleId">#[payload.ruleId]</cloudhub:custom-property>
+                <cloudhub:custom-property key="ruleName">#[payload.ruleName]</cloudhub:custom-property>
+                <cloudhub:custom-property key="time">#[payload.time]</cloudhub:custom-property>
+                <cloudhub:custom-property key="userId">#[payload.userId]</cloudhub:custom-property>
+                <cloudhub:custom-property key="userName">#[payload.userName]</cloudhub:custom-property>
+                <cloudhub:custom-property key="userEmail">#[payload.userEmail]</cloudhub:custom-property>
+                <cloudhub:custom-property key="clientIP">#[payload.clientIP]</cloudhub:custom-property>
+                <cloudhub:custom-property key="serverIP">#[payload.serverIP]</cloudhub:custom-property>
+                <cloudhub:custom-property key="action">#[payload.action]</cloudhub:custom-property>
+                <cloudhub:custom-property key="failed">#[payload.failed]</cloudhub:custom-property>
+                <cloudhub:custom-property key="failedCause">#[payload.failedCause]</cloudhub:custom-property>
+                <cloudhub:custom-property key="platform">#[payload.platform]</cloudhub:custom-property>
+                <cloudhub:custom-property key="objectType">#[payload.objectType]</cloudhub:custom-property>
+                <cloudhub:custom-property key="objectId">#[payload.objectId]</cloudhub:custom-property>
+                <cloudhub:custom-property key="objectName">#[payload.objectName]</cloudhub:custom-property>
+                <cloudhub:custom-property key="parentObjectType">#[payload.parentObjectType]</cloudhub:custom-property>
+                <cloudhub:custom-property key="parentObjectId">#[payload.parentObjectId]</cloudhub:custom-property>
+                <cloudhub:custom-property key="parentObjectName">#[payload.parentObjectName]</cloudhub:custom-property>
+            </cloudhub:custom-properties>
+        </cloudhub:create-notification>
+        <logger message="Notification sent to Cloudhub - #[payload.ruleId]" level="INFO" doc:name="Logger"/>
+        <choice-exception-strategy doc:name="Choice Exception Strategy">
+            <catch-exception-strategy when="exception.causedBy(java.lang.NullPointerException)" logException="false" doc:name="Catch Exception Strategy">
+                <logger message="Error sending notification to Cloudhub - #[payload.ruleId]" level="ERROR" doc:name="Log Error"/>
+            </catch-exception-strategy>
+        </choice-exception-strategy>
+    </flow>
+</mule>
