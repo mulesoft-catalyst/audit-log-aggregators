@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+    <sub-flow name="sendEventsToSplunkFlow">
+        <logger message="Sending events to Splunk - #[message.payload.size()] events will be sent" level="INFO" doc:name="Logger"/>
+        <expression-filter expression="#[payload.size() &gt; 0]" doc:name="Expression"/>
+        <flow-ref name="transformEventsArrayToJsonSplunkFormatFlow" doc:name="transformEventsArrayToJsonSplunkFormatFlow"/>
+        <http:request config-ref="HTTP_Splunk_Request_Configuration" path="${splunk.hec.path}" method="POST" doc:name="Send events to Splunk HEC">
+            <http:request-builder>
+                <http:header headerName="Authorization" value="Splunk ${splunk.hec.token}"/>
+            </http:request-builder>
+        </http:request>
+        <logger message="Response from Splunk: #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Logger"/>
+        <tracking:custom-event event-name="audit-log-splunk-sync-success" doc:name="Success Event">
+            <tracking:meta-data key="payload" value="#[message.payloadAs(java.lang.String)]"/>
+        </tracking:custom-event>
+    </sub-flow>
+    <sub-flow name="transformEventsArrayToJsonSplunkFormatFlow">
+        <collection-splitter doc:name="Split events"/>
+        <json:object-to-json-transformer doc:name="Events to String"/>
+        <collection-aggregator failOnTimeout="true" doc:name="Agreggate events"/>
+        <expression-transformer expression="#[org.apache.commons.lang.StringUtils.join(message.payload,&quot; &quot;)]" doc:name="Join event strings"/>
+    </sub-flow>
+</mule>

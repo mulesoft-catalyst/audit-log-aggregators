@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <sub-flow name="create-splunk-events-and-send">
+        <logger message="Transforming Audit Logs into Events" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform to events array">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((log) ->
+	{
+  		index: flowVars.config.splunkIndexAudit,
+		source: flowVars.config.splunkSource,
+  		sourcetype: flowVars.config.splunkSourceTypeAudit,
+//  		time: round (log.time / 1000) as :string,
+		time: log.time as :string,
+  		event: log
+  	}
+)]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="Audit logs transformed into events - #[payload.size()] events" level="INFO" doc:name="Logger"/>
+        <flow-ref name="sendEventsToSplunkFlow" doc:name="sendEventsToSplunkFlow"/>
+    </sub-flow>
+    <flow name="auditLogsSplunkAggregatorFlow" processingStrategy="synchronous">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="${mule.poll.frequency.seconds}" timeUnit="SECONDS"/>
+            <watermark variable="lastSyncDate" default-expression="#[server.dateTime.withTimeZone('UTC').plusSeconds('-'+${mule.poll.frequency.seconds})]" update-expression="#[flowVars.currentSyncDate]"/>
+            <logger message="Starting Audit Log Synchronization" level="INFO" doc:name="Logger"/>
+        </poll>
+        <dw:transform-message doc:name="Set properties">
+            <dw:set-variable resource="classpath:dataweave/set-properties.dwl" variableName="config"/>
+        </dw:transform-message>
+        <flow-ref name="loginToAnypointPlatformFlow" doc:name="loginToAnypointPlatformFlow"/>
+        <set-variable variableName="currentSyncDate" value="#[server.dateTime.withTimeZone('UTC')]" doc:name="Set current date"/>
+        <foreach collection="#[flowVars.config.organizationIdList]" doc:name="For Each">
+            <set-variable variableName="organizationId" value="#[payload]" doc:name="Set organizationId"/>
+            <logger message="Starting sync process for organizationId: #[flowVars.organizationId]" level="INFO" doc:name="Logger"/>
+            <flow-ref name="syncForOneOrganization" doc:name="syncForOneOrganization"/>
+        </foreach>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <logger message="server-metrics-splunk-sync-app failed - Error: #[exception.message] - Cause: #[exception.cause]" level="ERROR" doc:name="Logger"/>
+        </catch-exception-strategy>
+    </flow>
+    <sub-flow name="syncForOneOrganization">
+        <flow-ref name="retrieveUsersForOrganizationFlow" doc:name="retrieveUsersForOrganizationFlow"/>
+        <set-variable variableName="users" value="#[payload]" doc:name="Set users"/>
+        <flow-ref name="retrieveObjectsForOrganizationFlow" doc:name="retrieveObjectsForOrganizationFlow"/>
+        <set-variable variableName="objects" value="#[payload]" doc:name="Set objects"/>
+        <flow-ref name="retrieveAuditLogsForOrganizationFlow" doc:name="retrieveAuditLogsForOrganizationFlow"/>
+        <flow-ref name="create-splunk-events-and-send" doc:name="create-splunk-events-and-send"/>
+    </sub-flow>
+</mule>

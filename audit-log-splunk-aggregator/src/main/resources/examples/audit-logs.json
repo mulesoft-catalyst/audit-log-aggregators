@@ -1,0 +1,160 @@
+{
+    "data": [
+        {
+            "action": "Delete",
+            "clientIP": null,
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "1984493",
+                    "objectName": "anypoint-platform-status-splunk-sync-app",
+                    "objectType": "Application",
+                    "parentId": null,
+                    "parentType": null
+                }
+            ],
+            "payload": {
+                "subaction": ""
+            },
+            "platform": "Runtime Manager",
+            "serverIP": "10.0.11.19",
+            "timestamp": 1490707178371,
+            "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08"
+        },
+        {
+            "action": "edit",
+            "clientIP": "200.61.166.90",
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "161878",
+                    "objectName": "1.0",
+                    "objectType": "apiVersion",
+                    "parentId": "11697000",
+                    "parentType": "api"
+                }
+            ],
+            "payload": {
+                "properties": "Example",
+                "subaction": "update endpoint"
+            },
+            "platform": "api-platform-api",
+            "serverIP": "10.0.1.203",
+            "timestamp": 1490707240999,
+            "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08"
+        },
+        {
+            "action": "Deploy",
+            "clientIP": null,
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "1986512",
+                    "objectName": "hello-world-api-v1.0-3.8.x",
+                    "objectType": "Application",
+                    "parentId": null,
+                    "parentType": null
+                }
+            ],
+            "payload": {
+                "subaction": ""
+            },
+            "platform": "Runtime Manager",
+            "serverIP": "10.0.11.19",
+            "timestamp": 1490707261903,
+            "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08"
+        },
+        {
+            "action": "deploy",
+            "clientIP": "200.61.166.90",
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "161878",
+                    "objectName": "1.0",
+                    "objectType": "apiVersion",
+                    "parentId": "11697000",
+                    "parentType": "api"
+                }
+            ],
+            "payload": {
+                "properties": "Example",
+                "subaction": "redeploy proxy"
+            },
+            "platform": "api-platform-api",
+            "serverIP": "10.0.1.199",
+            "timestamp": 1490707261977,
+            "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08"
+        },
+        {
+            "action": "edit",
+            "clientIP": "52.87.245.3",
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "161878",
+                    "objectName": "1.0",
+                    "objectType": "apiVersion",
+                    "parentId": "11697000",
+                    "parentType": "api"
+                }
+            ],
+            "payload": {
+                "properties": "Example",
+                "subaction": "update endpoint"
+            },
+            "platform": "api-platform-api",
+            "serverIP": "10.0.11.18",
+            "timestamp": 1490707265344,
+            "userId": "92ba3a8a-ec9b-48d2-884c-f83ecb31bb08"
+        },
+        {
+            "action": "create",
+            "clientIP": "73.136.174.7",
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "58da8c95e4b00ff9156abb0b",
+                    "objectName": "splunklogging-pd",
+                    "objectType": "Application",
+                    "parentId": null,
+                    "parentType": null
+                }
+            ],
+            "payload": {
+                "properties": "Example"
+            },
+            "platform": "Runtime Manager",
+            "serverIP": "10.0.11.187",
+            "timestamp": 1490717845367,
+            "userId": "ba2590a6-a104-4118-8690-2522d2c7ff60"
+        },
+        {
+            "action": "start",
+            "clientIP": "73.136.174.7",
+            "failed": false,
+            "failedCause": null,
+            "objects": [
+                {
+                    "objectId": "58da8c95e4b00ff9156abb0b",
+                    "objectName": "splunklogging-pd",
+                    "objectType": "Application",
+                    "parentId": null,
+                    "parentType": null
+                }
+            ],
+            "payload": null,
+            "platform": "Runtime Manager",
+            "serverIP": "10.0.11.187",
+            "timestamp": 1490717845423,
+            "userId": "ba2590a6-a104-4118-8690-2522d2c7ff60"
+        }
+    ],
+    "total": 7
+}
