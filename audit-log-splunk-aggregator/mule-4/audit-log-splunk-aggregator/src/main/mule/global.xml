@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:request-config name="http-anypoint-platform-configuration" doc:name="HTTP Request configuration" doc:id="4617f1c3-4f72-4fa9-967f-fa0b1eb17e89" basePath="${anypoint.platform.basepath}" responseTimeout="${anypoint.platform.timeout}">
+		<http:request-connection protocol="${anypoint.platform.protocol}" host="${anypoint.platform.host}" port="${anypoint.platform.port}" />
+	</http:request-config>
+	<http:request-config name="http-splunk-configuration" doc:name="HTTP Request configuration" doc:id="cf6d29db-38de-4791-b70e-3e5a7736b96a" basePath="${splunk.hec.basepath}">
+		<http:request-connection protocol="${splunk.hec.protocol}" host="${splunk.hec.host}" port="${splunk.hec.port}" >
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+	<ee:object-store-caching-strategy name="caching-strategy" doc:name="Caching Strategy" doc:id="1e47572b-cb46-4681-be45-693385816c35" keyGenerationExpression="#['CONSTANT']" >
+		<os:private-object-store alias="cache-object-store" entryTtl="${object-store.token.ttl}" expirationInterval="${object-store.token.interval}" persistent="false" entryTtlUnit="MINUTES"/>
+	</ee:object-store-caching-strategy>
+	<os:object-store name="watermark-object-store" doc:name="Object store" doc:id="2428cc3a-8ad8-4cc0-b291-1e9ca64d2b32" entryTtl="${object-store.watermark.ttl}" entryTtlUnit="MINUTES" expirationInterval="${object-store.watermark.interval}" />
+	<global-property doc:name="Global Property" doc:id="a4a96c49-d315-45d3-8280-c785d0100478" name="mule.env" value="dev" />
+	<configuration-properties doc:name="Configuration properties" doc:id="ab90d758-346c-446d-9f2f-f4aa261ffee8" file="properties/config.yaml" />
+	<configuration-properties doc:name="Configuration properties" doc:id="509b6bed-cafd-4ef0-a110-90942bad05a8" file="properties/config-${mule.env}.yaml" />
+</mule>
