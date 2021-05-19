@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="arm-server-metrics-splunk-aggregator" doc:id="8217e7cc-fcee-437a-b2cc-b6f6328b975e" >
+		<scheduler doc:name="Scheduler" doc:id="638b2c28-521a-4f21-bb8d-8c1a95bb64d7" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="${scheduler.frequency}" startDelay="${scheduler.delay}" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-variable value='#[now() &gt;&gt; "UTC"]' doc:name="Set queryToDateTime" doc:id="9cc0cd21-4d1c-40f3-8553-8af351cc834f" variableName="queryToDateTime" />
+		<os:retrieve doc:name="Retrieve From Datetime" doc:id="07b5197f-a466-4e2f-9e27-e32f31c827a5" key="queryFromDateTime" objectStore="watermark-object-store" target="queryFromDateTime">
+				<os:default-value><![CDATA[#[vars.queryToDateTime - p('schedule.default-time-period') as Period]]]></os:default-value>
+			</os:retrieve>
+		<logger level="INFO" doc:name="Logger" doc:id="01e1ec06-9d8c-4a3a-af9c-642282f191e8" message="Start Process - From: #[vars.queryFromDateTime] - to: #[vars.queryToDateTime]" />
+		<flow-ref doc:name="get-anypoint-platform-token-cached" doc:id="f72a9be1-346b-4f1f-b878-35aa2ce0e51e" name="anypoint-platform-get-token-cached" target="token"/>
+		<flow-ref doc:name="get-business-groups" doc:id="97cd6284-4066-48bc-abbf-4e0e2a63d27a" name="get-business-groups" target="businessGroups"/>
+		<parallel-foreach collection="#[vars.businessGroups]">
+			<set-variable variableName="businessGroup" value="#[payload]" doc:name="Set businessGroup"/>
+			<logger level="INFO" doc:name="Logger" doc:id="750c973a-da20-4db6-a930-c1b68349c88e" message="Processing Business Group - Id: #[vars.businessGroup.id] - Name: #[vars.businessGroup.name]"/>
+			<flow-ref doc:name="get-users" doc:id="2da71d27-6c44-47db-88e3-6678cf9c2f69" name="get-users" target="users"/>
+			<flow-ref doc:name="get-audit-object-names" doc:id="1bce5698-90f6-400d-aa08-c9c049bd7c69" name="get-audit-object-names" target="objectNames"/>
+			<flow-ref doc:name="get-audit-logs" doc:id="219a4dd5-2fac-4e7f-9ea6-39af3ce9387f" name="get-audit-logs"/>
+			<flow-ref doc:name="send-events" doc:id="c473221e-4685-4f1d-95fb-d8b7a4f7eb6e" name="send-events"/>
+		</parallel-foreach>
+		<os:store doc:name="Set From DateTime" doc:id="8ffca597-2eae-4103-b648-64c1880db6ed" key="queryFromDateTime" objectStore="watermark-object-store">
+			<os:value ><![CDATA[#[vars.queryToDateTime]]]></os:value>
+		</os:store>
+	</flow>
+	<sub-flow name="anypoint-platform-get-token-cached" doc:id="0ed15941-7c52-4a25-a1d3-91f1f2451f7a" >
+		<ee:cache doc:name="Cache" doc:id="2e64d631-8c87-4086-85d1-b2895c06799e" cachingStrategy-ref="caching-strategy">
+			<flow-ref doc:name="get-anypoint-platform-token" doc:id="42e210e9-94ad-4105-b877-126a90341256" name="anypoint-platform-get-token"/>
+		</ee:cache>
+	</sub-flow>
+	<sub-flow name="anypoint-platform-get-token" doc:id="671a9ac7-dbca-41a9-96d8-87d341a49ec7" >
+		<http:request method="POST" doc:name="Get Anypoint Token" doc:id="b45ed344-91df-447b-b9bc-cf8355aee4c2" config-ref="http-anypoint-platform-configuration" path="/accounts/api/v2/oauth2/token">
+			<http:body ><![CDATA[#[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+	grant_type: "client_credentials", 
+	client_id: p('anypoint.platform.clientId'),
+	client_secret: p('anypoint.platform.clientSecret')
+}]]]></http:body>
+		</http:request>
+		<set-payload value="#[payload.access_token]" doc:name="Set Payload" doc:id="70a6d749-8d51-4b17-a971-ea4fb6968b2a" />
+		<logger level="INFO" doc:name="Logger" doc:id="3ade6557-2a3b-431b-b2b2-0cd695edc40f" message="Obtained Access Token" />
+	</sub-flow>
+</mule>

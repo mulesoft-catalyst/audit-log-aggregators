@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<sub-flow name="send-events">
+		<logger level="INFO" doc:name="Logger" doc:id="506a0635-62d8-4253-b84b-434a68a37a04" message="Send Metrics - Business Group: #[vars.businessGroup.name]"/>
+		<http:request method="POST" doc:name="Splunk - Send Events" doc:id="8ec2f340-4f04-4c6e-8a71-a5bd0b98b4c0" config-ref="http-splunk-configuration" path="/raw">
+			<http:body ><![CDATA[#[output application/java
+---
+(payload map write($,"application/json",{indent:false})) joinBy "\n"]]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Splunk ' ++ p('splunk.hec.token'),
+	'X-Splunk-Request-Channel': p('splunk.hec.channel')	
+}]]]></http:headers>
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	index: p('splunk.index'),
+	source: p('splunk.source'),
+	sourcetype: p('splunk.sourcetype')
+}]]]></http:query-params>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="93b05bab-36fb-42fe-867a-2750494d8693" message="Metrics Sent - Business Group: #[vars.businessGroup.name]"/>
+	</sub-flow>
+</mule>
