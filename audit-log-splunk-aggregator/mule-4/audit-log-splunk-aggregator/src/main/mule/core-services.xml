@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<sub-flow name="get-business-groups" doc:id="61d4601b-3582-4100-a0fe-77424c3f8420" >
+		<logger level="INFO" doc:name="Logger" doc:id="03ac4ab0-e1c6-4329-8b71-7c7b39c146b8" message="Get Business Groups - Get Hierarchy]"/>
+		<http:request method="GET" doc:name="Core Services - Get Hierarchy" doc:id="81c4012f-10de-49b8-a796-5c1c2b7ca3f6" config-ref="http-anypoint-platform-configuration" path="/accounts/api/organizations/{organizationId}/hierarchy">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Bearer ' ++ vars.token
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	organizationId : p('anypoint.platform.organizationId')
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Get Business Groups" doc:id="e0d2a498-6d9d-4098-bcfa-573b3c440835" >
+			<ee:message >
+				<ee:set-payload resource="dw/get-business-groups.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f18f180e-39f5-422a-8158-19736307fa33" message="Business Groups found: #[(payload map $.name) joinBy ',']"/>
+	</sub-flow>
+	<sub-flow name="get-users" doc:id="0cf460b9-9a94-4cb9-9e96-25434f5bcc98" >
+		<logger level="INFO" doc:name="Logger" doc:id="4c05286f-0a40-4e61-a02f-7344920a426e" message="Get Users"/>
+		<http:request method="GET" doc:name="Core Services - Get Users" doc:id="2855fac5-5f27-41dc-88f9-3687053e7c65" config-ref="http-anypoint-platform-configuration" path="/accounts/api/organizations/{organizationId}/users">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Bearer ' ++ vars.token
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	organizationId : p('anypoint.platform.organizationId')
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Get Users" doc:id="1a815144-20be-4200-9663-f4fba85d83ea" >
+			<ee:message >
+				<ee:set-payload resource="dw/get-users.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="654ff13d-8265-414d-875d-c38e2b333c52" message="Users found: #[sizeOf(payload)]"/>
+	</sub-flow>
+	<sub-flow name="get-audit-object-names" doc:id="426fc3c6-bf6a-4aa9-a2ca-401713aefe8f" >
+		<logger level="INFO" doc:name="Logger" doc:id="b548eced-c943-42e7-9662-7fcd2443a5ec" message="Get Audit Objects"/>
+		<http:request method="GET" doc:name="Audit - Get Objects" doc:id="8155a3e4-2f76-4419-b0ed-48d21215aa00" config-ref="http-anypoint-platform-configuration" path="/audit/v2/organizations/{organizationId}/objects">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Bearer ' ++ vars.token
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	organizationId : p('anypoint.platform.organizationId')
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Get Object Names" doc:id="a506a1c9-4f5a-4ffa-97fd-33d6faa0bcd5" >
+			<ee:message >
+				<ee:set-payload resource="dw/get-objects.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="763341f3-6735-4fcd-828a-0597bb7f666b" message="Objects found"/>
+	</sub-flow>
+	<sub-flow name="get-audit-logs" doc:id="5443e858-cf67-493a-b68c-002260e78e5b" >
+		<logger level="INFO" doc:name="Logger" doc:id="8ba0207c-7551-4d57-bdc5-579e3a144cfa" message="Get Audit Logs"/>
+		<http:request method="POST" doc:name="Audit - Get Logs" doc:id="81fbb5ba-04f9-4221-badb-b17e19caa773" config-ref="http-anypoint-platform-configuration" path="/audit/v2/organizations/{organizationId}/query">
+			<http:body ><![CDATA[#[output application/json
+---
+{
+	startDate: vars.queryFromDateTime as String,
+	endDate: vars.queryToDateTime as String,
+}]]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Bearer ' ++ vars.token
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	organizationId : p('anypoint.platform.organizationId')
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Get Audit Logs" doc:id="e4d2f7c5-cd90-4ab2-bfd0-8424102d6425" >
+			<ee:message >
+				<ee:set-payload resource="dw/get-audit-logs.dwl" />
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3699eedd-e0f2-4f04-9b83-ef88fd90c3ef" message="Logs found: #[sizeOf(payload)]"/>
+	</sub-flow>
+</mule>

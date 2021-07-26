@@ -1,0 +1,37 @@
+anypoint:
+  platform:
+    protocol: "HTTPS"
+    host: "anypoint.mulesoft.com"
+    basepath: ""
+    port: "443"
+    timeout: "60000"
+    organizationId: 
+    ignoredBusinessGroups: 
+    clientId: 
+    clientSecret: 
+    
+scheduler:
+  frequency: "300" # Seconds
+  delay: "0"
+
+splunk:
+  hec:
+    protocol: "HTTPS"
+    host: # ".splunkcloud.com"
+    port: # "8088"
+    basepath: "/services/collector"
+    token: 
+    channel: 
+  index: 
+  sourcetype: "_json"
+  source: "mule"
+  
+object-store:
+  token:
+    ttl: "5"
+    interval: "1"
+  watermark:
+    ttl: "4320" # 72 Hours = 60 * 72
+    interval: "5" # 5 Minutes
+schedule:
+  default-time-period: "PT12H" # "PT12H" # Hours before current DateTime to retrieve if Last query is not present
