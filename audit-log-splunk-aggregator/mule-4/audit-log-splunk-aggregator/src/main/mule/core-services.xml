@@ -7,6 +7,25 @@
 	xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+		<sub-flow name="anypoint-platform-get-token-cached" doc:id="38bea330-ed0a-43a4-a67d-a4671dca962f" >
+		<ee:cache doc:name="Cache" doc:id="7cd06846-79a5-4ddf-9120-e400504ab17e" cachingStrategy-ref="caching-strategy">
+			<flow-ref doc:name="get-anypoint-platform-token" doc:id="c27e0729-4c22-4117-ab3b-6475f4853a63" name="anypoint-platform-get-token"/>
+		</ee:cache>
+	</sub-flow>
+	<sub-flow name="anypoint-platform-get-token" doc:id="2a912ef4-7fe2-4400-a110-596f4cbeb127" >
+		<http:request method="POST" doc:name="Get Anypoint Token" doc:id="8112cd9c-25fb-419d-9679-de752f10aa60" config-ref="http-anypoint-platform-configuration" path="/accounts/api/v2/oauth2/token">
+			<http:body ><![CDATA[#[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+	grant_type: "client_credentials", 
+	client_id: p('anypoint.platform.clientId'),
+	client_secret: p('anypoint.platform.clientSecret')
+}]]]></http:body>
+		</http:request>
+		<set-payload value="#[payload.access_token]" doc:name="Set Payload" doc:id="c1beb8e9-a7dd-43cf-b627-a4b291439580" />
+		<logger level="INFO" doc:name="Logger" doc:id="ddecbac9-5647-4759-9a49-0f8728917cb8" message="Obtained Access Token" />
+	</sub-flow>
 	<sub-flow name="get-business-groups" doc:id="61d4601b-3582-4100-a0fe-77424c3f8420" >
 		<logger level="INFO" doc:name="Logger" doc:id="03ac4ab0-e1c6-4329-8b71-7c7b39c146b8" message="Get Business Groups - Get Hierarchy]"/>
 		<http:request method="GET" doc:name="Core Services - Get Hierarchy" doc:id="81c4012f-10de-49b8-a796-5c1c2b7ca3f6" config-ref="http-anypoint-platform-configuration" path="/accounts/api/organizations/{organizationId}/hierarchy">
@@ -28,56 +47,25 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		</ee:transform>
 		<logger level="INFO" doc:name="Logger" doc:id="f18f180e-39f5-422a-8158-19736307fa33" message="Business Groups found: #[(payload map $.name) joinBy ',']"/>
 	</sub-flow>
-	<sub-flow name="get-users" doc:id="0cf460b9-9a94-4cb9-9e96-25434f5bcc98" >
-		<logger level="INFO" doc:name="Logger" doc:id="4c05286f-0a40-4e61-a02f-7344920a426e" message="Get Users"/>
-		<http:request method="GET" doc:name="Core Services - Get Users" doc:id="2855fac5-5f27-41dc-88f9-3687053e7c65" config-ref="http-anypoint-platform-configuration" path="/accounts/api/organizations/{organizationId}/users">
-			<http:headers><![CDATA[#[output application/java
----
-{
-	Authorization : 'Bearer ' ++ vars.token
-}]]]></http:headers>
-			<http:uri-params><![CDATA[#[output application/java
----
-{
-	organizationId : p('anypoint.platform.organizationId')
-}]]]></http:uri-params>
-		</http:request>
-		<ee:transform doc:name="Get Users" doc:id="1a815144-20be-4200-9663-f4fba85d83ea" >
-			<ee:message >
-				<ee:set-payload resource="dw/get-users.dwl" />
-			</ee:message>
-		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="654ff13d-8265-414d-875d-c38e2b333c52" message="Users found: #[sizeOf(payload)]"/>
-	</sub-flow>
-	<sub-flow name="get-audit-object-names" doc:id="426fc3c6-bf6a-4aa9-a2ca-401713aefe8f" >
-		<logger level="INFO" doc:name="Logger" doc:id="b548eced-c943-42e7-9662-7fcd2443a5ec" message="Get Audit Objects"/>
-		<http:request method="GET" doc:name="Audit - Get Objects" doc:id="8155a3e4-2f76-4419-b0ed-48d21215aa00" config-ref="http-anypoint-platform-configuration" path="/audit/v2/organizations/{organizationId}/objects">
-			<http:headers><![CDATA[#[output application/java
----
-{
-	Authorization : 'Bearer ' ++ vars.token
-}]]]></http:headers>
-			<http:uri-params><![CDATA[#[output application/java
----
-{
-	organizationId : p('anypoint.platform.organizationId')
-}]]]></http:uri-params>
-		</http:request>
-		<ee:transform doc:name="Get Object Names" doc:id="a506a1c9-4f5a-4ffa-97fd-33d6faa0bcd5" >
-			<ee:message >
-				<ee:set-payload resource="dw/get-objects.dwl" />
-			</ee:message>
-		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="763341f3-6735-4fcd-828a-0597bb7f666b" message="Objects found"/>
-	</sub-flow>
 	<sub-flow name="get-audit-logs" doc:id="5443e858-cf67-493a-b68c-002260e78e5b" >
 		<logger level="INFO" doc:name="Logger" doc:id="8ba0207c-7551-4d57-bdc5-579e3a144cfa" message="Get Audit Logs"/>
 		<http:request method="POST" doc:name="Audit - Get Logs" doc:id="81fbb5ba-04f9-4221-badb-b17e19caa773" config-ref="http-anypoint-platform-configuration" path="/audit/v2/organizations/{organizationId}/query">
-			<http:body ><![CDATA[#[output application/json
+			<http:body ><![CDATA[#[%dw 2.0
+output application/json
 ---
 {
-	startDate: vars.queryFromDateTime as String,
-	endDate: vars.queryToDateTime as String,
+	"startDate":  vars.queryFromDateTime,
+	"endDate": vars.queryToDateTime,
+	"platforms": [],
+	"ascending": false,
+	"objectTypes": [],
+	"actions": [],
+	"objectIds": [],
+	"userIds": [],
+	"ascending": false,
+	"organizationId": p("anypoint.platform.organizationId"),
+	"offset":vars.offset.record,
+	"limit": vars.offset.limitRecords as Number
 }]]]></http:body>
 			<http:headers><![CDATA[#[output application/java
 ---
@@ -89,7 +77,16 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 {
 	organizationId : p('anypoint.platform.organizationId')
 }]]]></http:uri-params>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	include_internal : false
+}]]]></http:query-params>
 		</http:request>
+		<set-variable value="#[payload.total]"
+			doc:name="Total of Records"
+			doc:id="a3403654-2638-4353-a74b-6e09bd4bc02b"
+			variableName="totalRecords" />
 		<ee:transform doc:name="Get Audit Logs" doc:id="e4d2f7c5-cd90-4ab2-bfd0-8424102d6425" >
 			<ee:message >
 				<ee:set-payload resource="dw/get-audit-logs.dwl" />
