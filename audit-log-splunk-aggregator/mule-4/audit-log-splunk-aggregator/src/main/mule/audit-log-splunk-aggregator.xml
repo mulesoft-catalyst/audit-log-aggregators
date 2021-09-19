@@ -9,12 +9,12 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 	<flow name="arm-server-metrics-splunk-aggregator" doc:id="8217e7cc-fcee-437a-b2cc-b6f6328b975e" >
 		<scheduler doc:name="Scheduler" doc:id="638b2c28-521a-4f21-bb8d-8c1a95bb64d7" >
 			<scheduling-strategy >
-				<fixed-frequency frequency="${scheduler.frequency}" startDelay="${scheduler.delay}" timeUnit="SECONDS"/>
+				<cron expression="${scheduler.frequency.cron}" timeZone="${scheduler.frequency.timezone}" />
 			</scheduling-strategy>
 		</scheduler>
 		<set-variable value='#[now() &gt;&gt; "UTC"]' doc:name="Set queryToDateTime" doc:id="9cc0cd21-4d1c-40f3-8553-8af351cc834f" variableName="queryToDateTime" />
 		<os:retrieve doc:name="Retrieve From Datetime" doc:id="07b5197f-a466-4e2f-9e27-e32f31c827a5" key="queryFromDateTime" objectStore="watermark-object-store" target="queryFromDateTime">
-				<os:default-value><![CDATA[#[vars.queryToDateTime - p('schedule.default-time-period') as Period]]]></os:default-value>
+				<os:default-value><![CDATA[#[p('scheduler.startTime') as DateTime]]]></os:default-value>
 			</os:retrieve>
 		<logger level="INFO" doc:name="Logger" doc:id="01e1ec06-9d8c-4a3a-af9c-642282f191e8" message="Start Process - From: #[vars.queryFromDateTime] - to: #[vars.queryToDateTime]" />
 		<flow-ref doc:name="get-anypoint-platform-token-cached" doc:id="f72a9be1-346b-4f1f-b878-35aa2ce0e51e" name="anypoint-platform-get-token-cached" target="token"/>
@@ -22,32 +22,66 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		<parallel-foreach collection="#[vars.businessGroups]">
 			<set-variable variableName="businessGroup" value="#[payload]" doc:name="Set businessGroup"/>
 			<logger level="INFO" doc:name="Logger" doc:id="750c973a-da20-4db6-a930-c1b68349c88e" message="Processing Business Group - Id: #[vars.businessGroup.id] - Name: #[vars.businessGroup.name]"/>
-			<flow-ref doc:name="get-users" doc:id="2da71d27-6c44-47db-88e3-6678cf9c2f69" name="get-users" target="users"/>
-			<flow-ref doc:name="get-audit-object-names" doc:id="1bce5698-90f6-400d-aa08-c9c049bd7c69" name="get-audit-object-names" target="objectNames"/>
-			<flow-ref doc:name="get-audit-logs" doc:id="219a4dd5-2fac-4e7f-9ea6-39af3ce9387f" name="get-audit-logs"/>
-			<flow-ref doc:name="send-events" doc:id="c473221e-4685-4f1d-95fb-d8b7a4f7eb6e" name="send-events"/>
+			<flow-ref doc:name="audit-log-pagination" doc:id="219a4dd5-2fac-4e7f-9ea6-39af3ce9387f" name="audit-log-pagination"/>
 		</parallel-foreach>
 		<os:store doc:name="Set From DateTime" doc:id="8ffca597-2eae-4103-b648-64c1880db6ed" key="queryFromDateTime" objectStore="watermark-object-store">
 			<os:value ><![CDATA[#[vars.queryToDateTime]]]></os:value>
 		</os:store>
 	</flow>
-	<sub-flow name="anypoint-platform-get-token-cached" doc:id="0ed15941-7c52-4a25-a1d3-91f1f2451f7a" >
-		<ee:cache doc:name="Cache" doc:id="2e64d631-8c87-4086-85d1-b2895c06799e" cachingStrategy-ref="caching-strategy">
-			<flow-ref doc:name="get-anypoint-platform-token" doc:id="42e210e9-94ad-4105-b877-126a90341256" name="anypoint-platform-get-token"/>
-		</ee:cache>
-	</sub-flow>
-	<sub-flow name="anypoint-platform-get-token" doc:id="671a9ac7-dbca-41a9-96d8-87d341a49ec7" >
-		<http:request method="POST" doc:name="Get Anypoint Token" doc:id="b45ed344-91df-447b-b9bc-cf8355aee4c2" config-ref="http-anypoint-platform-configuration" path="/accounts/api/v2/oauth2/token">
-			<http:body ><![CDATA[#[%dw 2.0
-output application/x-www-form-urlencoded
----
-{
-	grant_type: "client_credentials", 
-	client_id: p('anypoint.platform.clientId'),
-	client_secret: p('anypoint.platform.clientSecret')
-}]]]></http:body>
-		</http:request>
-		<set-payload value="#[payload.access_token]" doc:name="Set Payload" doc:id="70a6d749-8d51-4b17-a971-ea4fb6968b2a" />
-		<logger level="INFO" doc:name="Logger" doc:id="3ade6557-2a3b-431b-b2b2-0cd695edc40f" message="Obtained Access Token" />
-	</sub-flow>
+<flow name="audit-log-pagination"
+		doc:id="a387bc0e-3e69-47bb-91c5-ff61d4518dfb">
+		<logger message="#[payload]" level="INFO" doc:name="Logger" />
+		<ee:transform doc:name="Pagination Variables"
+			doc:id="7707f766-1fd0-4c0e-a91a-c8ac27ef2293">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="dw/get-pagination-variables.dwl" variableName="offset" />
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="audit-logs-process-extraction"
+			doc:id="afc1469a-d5d8-4425-9f83-8111038cdc14"
+			name="audit-logs-process-extraction" />
+		<ee:transform doc:name="Create Pagination Empty Array" doc:id="e0bf83fe-435b-4ee8-b24d-daf0608783f6">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable resource="dw/get-var-empty-array.dwl" variableName="numberExtractions" />
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice"
+			doc:id="12431141-e598-4dd8-a18c-70bd5336e755">
+			<when
+				expression="#[(sizeOf(vars.numberExtractions.counter[1]) default 0) &gt;= 1]">
+				<foreach doc:name="For Each"
+					doc:id="6b12b88c-ecb5-485d-bc60-52ba90c49a01"
+					collection="#[vars.numberExtractions.counter]">
+					<flow-ref doc:name="Audit Logs Exctraction "
+						doc:id="420c2fe4-a348-4487-9668-57337a0e60bb"
+						name="audit-logs-process-extraction" />
+				</foreach>
+			</when>
+		</choice>
+		<logger level="INFO" doc:name="Logger" />
+	</flow>
+
+
+	<flow name="audit-logs-process-extraction"
+		doc:id="842ff716-b8d0-4639-97fb-ab7f3ad168fc">
+		<flow-ref doc:name="get-audit-logs"
+			doc:id="4ddada27-7d4d-4d17-aa6d-a9271931f7ef"
+			name="get-audit-logs" />
+		<choice doc:name="New Audit Logs"
+			doc:id="0764be42-2619-4a4b-9585-009aae864b0d">
+			<when expression="#[not isEmpty(payload)]">
+				<flow-ref name="send-events"
+					doc:name="send-events" doc:id="993ea128-49dc-4e91-b11d-798daf4f3977"/>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger"
+					doc:id="400d5024-369c-4f8c-9d39-328006cc182c"
+					message="No new events to be Published" />
+			</otherwise>
+		</choice>
+	</flow>
 </mule>
