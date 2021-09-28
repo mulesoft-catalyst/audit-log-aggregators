@@ -40,3 +40,5 @@ object-store:
   watermark:
     ttl: "4320" # 72 Hours = 60 * 72
     interval: "5" # 5 Minutes
+schedule:
+  default-time-period: "PT12H" # "PT12H" # Hours before current DateTime to retrieve if Last query is not present
