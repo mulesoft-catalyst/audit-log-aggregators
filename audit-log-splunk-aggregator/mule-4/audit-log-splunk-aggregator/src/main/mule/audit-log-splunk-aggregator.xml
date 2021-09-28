@@ -14,7 +14,11 @@ http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/cu
 		</scheduler>
 		<set-variable value='#[now() &gt;&gt; "UTC"]' doc:name="Set queryToDateTime" doc:id="9cc0cd21-4d1c-40f3-8553-8af351cc834f" variableName="queryToDateTime" />
 		<os:retrieve doc:name="Retrieve From Datetime" doc:id="07b5197f-a466-4e2f-9e27-e32f31c827a5" key="queryFromDateTime" objectStore="watermark-object-store" target="queryFromDateTime">
-				<os:default-value><![CDATA[#[p('scheduler.startTime') as DateTime]]]></os:default-value>
+				<os:default-value><![CDATA[#[//Use property scheduler.startTime to extract from a particular Date. Comment line 2 if use Period of time
+p('scheduler.startTime') as DateTime
+
+//Use property schedule.default-time-period to extract from a particular Period of Time, uncomment below line in case need it
+//vars.queryToDateTime - p('schedule.default-time-period') as Period]]]></os:default-value>
 			</os:retrieve>
 		<logger level="INFO" doc:name="Logger" doc:id="01e1ec06-9d8c-4a3a-af9c-642282f191e8" message="Start Process - From: #[vars.queryFromDateTime] - to: #[vars.queryToDateTime]" />
 		<flow-ref doc:name="get-anypoint-platform-token-cached" doc:id="f72a9be1-346b-4f1f-b878-35aa2ce0e51e" name="anypoint-platform-get-token-cached" target="token"/>
