@@ -83,6 +83,14 @@ output application/json
 	include_internal : false
 }]]]></http:query-params>
 		</http:request>
+		<ee:transform doc:name="Convert to Java" doc:id="d2adb68d-ec75-4507-b30e-7eb374fd8d2e">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 		<set-variable value="#[payload.total]"
 			doc:name="Total of Records"
 			doc:id="a3403654-2638-4353-a74b-6e09bd4bc02b"

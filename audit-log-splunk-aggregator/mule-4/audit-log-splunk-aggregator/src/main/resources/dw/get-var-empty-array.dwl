@@ -1,5 +1,5 @@
 %dw 2.0 
-output application/json
+output application/java
 fun prepareList(list:Array, maxSize: Number) = if(sizeOf(list) >= maxSize  )
 list
 else

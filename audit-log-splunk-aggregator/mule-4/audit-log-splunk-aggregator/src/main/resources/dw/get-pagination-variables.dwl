@@ -1,4 +1,4 @@
-output application/json
+output application/java
 ---
 {
 	limitRecords: p("anypoint.auditLogs.limitRecords"),
