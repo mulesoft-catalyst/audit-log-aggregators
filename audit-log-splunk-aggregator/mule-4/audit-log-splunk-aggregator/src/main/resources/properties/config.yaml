@@ -9,10 +9,17 @@ anypoint:
     ignoredBusinessGroups: 
     clientId: 
     clientSecret: 
+  auditLogs:
+    limitRecords: "150" #pagination limit records extraction
     
 scheduler:
-  frequency: "300" # Seconds
-  delay: "0"
+  frequency: 
+    cron: "0 */10 * ? * *" 
+    #Sample for dev "0 17 * * * ? *" At second :00 of minute :17 of every hour
+    #Sample for prod "0 0 0 * * ? *" At 00:00:00am every day
+    #https://www.freeformatter.com/cron-expression-generator-quartz.html
+    timezone: "GMT-5"
+  startTime: "2021-09-15T01:00:00.000Z[UTC]"
 
 splunk:
   hec:
