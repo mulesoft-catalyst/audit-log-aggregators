@@ -27,6 +27,7 @@ p('scheduler.startTime') as DateTime
 			<set-variable variableName="businessGroup" value="#[payload]" doc:name="Set businessGroup"/>
 			<logger level="INFO" doc:name="Logger" doc:id="750c973a-da20-4db6-a930-c1b68349c88e" message="Processing Business Group - Id: #[vars.businessGroup.id] - Name: #[vars.businessGroup.name]"/>
 			<flow-ref doc:name="audit-log-pagination" doc:id="219a4dd5-2fac-4e7f-9ea6-39af3ce9387f" name="audit-log-pagination"/>
+			<logger level="INFO" doc:name="Logger" doc:id="923e3b2d-3fd3-4963-a0e7-dac6b3e6593f" message="Finished processing Business Group - Id: #[vars.businessGroup.id] - Name: #[vars.businessGroup.name]" />
 		</parallel-foreach>
 		<os:store doc:name="Set From DateTime" doc:id="8ffca597-2eae-4103-b648-64c1880db6ed" key="queryFromDateTime" objectStore="watermark-object-store">
 			<os:value ><![CDATA[#[vars.queryToDateTime]]]></os:value>
@@ -34,7 +35,6 @@ p('scheduler.startTime') as DateTime
 	</flow>
 <flow name="audit-log-pagination"
 		doc:id="a387bc0e-3e69-47bb-91c5-ff61d4518dfb">
-		<logger message="#[payload]" level="INFO" doc:name="Logger" />
 		<ee:transform doc:name="Pagination Variables"
 			doc:id="7707f766-1fd0-4c0e-a91a-c8ac27ef2293">
 			<ee:message>
@@ -56,17 +56,22 @@ p('scheduler.startTime') as DateTime
 		<choice doc:name="Choice"
 			doc:id="12431141-e598-4dd8-a18c-70bd5336e755">
 			<when
-				expression="#[(sizeOf(vars.numberExtractions.counter[1]) default 0) &gt;= 1]">
+				expression="#[(sizeOf(vars.numberExtractions) default 0) &gt;= 1]">
 				<foreach doc:name="For Each"
 					doc:id="6b12b88c-ecb5-485d-bc60-52ba90c49a01"
-					collection="#[vars.numberExtractions.counter]">
-					<flow-ref doc:name="Audit Logs Exctraction "
+					collection="#[vars.numberExtractions]">
+					<ee:transform doc:name="Pagination Variables" doc:id="f2abda79-b1fd-4caa-9b1c-754e176e45e8">
+						<ee:message />
+						<ee:variables>
+							<ee:set-variable resource="dw/update-pagination-variables.dwl" variableName="offset" />
+						</ee:variables>
+					</ee:transform>
+					<flow-ref doc:name="Audit Logs Extraction "
 						doc:id="420c2fe4-a348-4487-9668-57337a0e60bb"
 						name="audit-logs-process-extraction" />
 				</foreach>
 			</when>
 		</choice>
-		<logger level="INFO" doc:name="Logger" />
 	</flow>
 
 
